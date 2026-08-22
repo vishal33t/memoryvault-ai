@@ -19,10 +19,13 @@ model User {
 }
 
 model Screenshot {
-  id        String   @id @default(cuid())
+ id        String   @id @default(cuid())
   userId    String
   imageUrl  String
+  fileName  String
+  category  String?
+  status    String   @default("uploaded")
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
