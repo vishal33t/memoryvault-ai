@@ -1,38 +1,41 @@
-export default function MemoryCard({
-  title,
-  category,
-  description,
-  deadline,
-}) {
+import Link from "next/link";
+
+export default function MemoryCard({ memory }) {
   return (
-    <div className="rounded-xl border bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase text-gray-500">
-            {category}
-          </p>
-
-          <h3 className="mt-1 text-lg font-semibold">
-            {title}
-          </h3>
-        </div>
-
-        {deadline && (
-          <span className="rounded-full bg-red-50 px-3 py-1 text-xs text-red-600">
-            Deadline
-          </span>
+    <Link
+      href={`/dashboard/memories/${memory.id}`}
+      className="flex overflow-hidden rounded-xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+    >
+      {/* Image */}
+      <div className="h-32 w-32 shrink-0 bg-gray-100">
+        {memory.imageUrl ? (
+          <img
+            src={memory.imageUrl}
+            alt={memory.fileName}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-xs text-gray-400">
+            No image
+          </div>
         )}
       </div>
 
-      <p className="mt-3 text-sm text-gray-600">
-        {description}
-      </p>
-
-      {deadline && (
-        <p className="mt-4 text-sm font-medium">
-          Deadline: {deadline}
+      {/* Content */}
+      <div className="flex-1 p-4">
+        <p className="text-xs font-medium uppercase text-gray-500">
+          {memory.category || "Uncategorized"}
         </p>
-      )}
-    </div>
+
+        <h3 className="mt-1 font-semibold">
+          {memory.fileName}
+        </h3>
+
+        <p className="mt-2 text-sm text-gray-500">
+          Saved{" "}
+          {new Date(memory.createdAt).toLocaleDateString()}
+        </p>
+      </div>
+    </Link>
   );
 }

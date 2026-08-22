@@ -5,6 +5,11 @@ export const navigationItems = [
     icon: "⌂",
   },
   {
+  name: "Memories",
+  href: "/dashboard/memories",
+  icon: "🧠",
+  },
+  {
     name: "Inbox",
     href: "/dashboard/inbox",
     icon: "📥",

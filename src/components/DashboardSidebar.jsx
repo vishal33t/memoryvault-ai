@@ -1,17 +1,10 @@
-const navigation = [
-  { name: "Dashboard", icon: "⌂" },
-  { name: "Inbox", icon: "📥" },
-  { name: "Jobs", icon: "💼" },
-  { name: "Internships", icon: "🎓" },
-  { name: "Courses", icon: "📚" },
-  { name: "Products", icon: "🛍️" },
-  { name: "Events", icon: "📅" },
-  { name: "Reminders", icon: "⏰" },
-];
+import Link from "next/link";
+import { navigationItems } from "@/lib/navigation";
 
 export default function DashboardSidebar() {
   return (
     <aside className="hidden min-h-screen w-64 border-r bg-white md:block">
+      {/* Logo / Header */}
       <div className="border-b p-6">
         <h1 className="text-xl font-bold">
           MemoryVault AI
@@ -22,15 +15,18 @@ export default function DashboardSidebar() {
         </p>
       </div>
 
+      {/* Navigation */}
       <nav className="p-4">
-        {navigation.map((item) => (
-          <button
+        {navigationItems.map((item) => (
+          <Link
             key={item.name}
+            href={item.href}
             className="mb-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm hover:bg-gray-100"
           >
             <span>{item.icon}</span>
+
             <span>{item.name}</span>
-          </button>
+          </Link>
         ))}
       </nav>
     </aside>
