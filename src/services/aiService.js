@@ -67,19 +67,17 @@ export async function analyzeText(text) {
     model: "gemini-3.6-flash",
 
     contents: `
-You are the AI analysis engine for MemoryVault.
+You are the AI analysis engine for MemoryVault AI.
 
 Analyze the saved content below.
 
-Identify what type of information it contains.
-
 Extract only information that is supported by the content.
 
-Do not invent missing information.
+Do not invent information.
 
 If a field is not available, return null.
 
-Normalize deadlines into YYYY-MM-DD when possible.
+Normalize deadlines to YYYY-MM-DD when possible.
 
 CONTENT:
 
