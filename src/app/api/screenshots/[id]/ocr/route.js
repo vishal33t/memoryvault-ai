@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { supabase } from "@/lib/supabase";
 import { extractTextFromImage } from "@/services/ocrService";
+import { analyzeText } from "@/services/aiService";
 
 export async function POST(request, { params }) {
   try {
@@ -40,7 +41,11 @@ export async function POST(request, { params }) {
       },
     });
 
-    console.log(`Starting OCR for memory: ${memory.id}`);
+    console.log(`Starting AI processing for memory: ${memory.id}`);
+
+    // --------------------------------
+    // STEP 1: Download image
+    // --------------------------------
 
     const { data, error } = await supabase.storage
       .from("memory-images")
@@ -64,10 +69,33 @@ export async function POST(request, { params }) {
       `Image buffer created: ${imageBuffer.length} bytes`
     );
 
+    // --------------------------------
+    // STEP 2: OCR
+    // --------------------------------
+
     const extractedText =
       await extractTextFromImage(imageBuffer);
 
     console.log("OCR completed.");
+
+    console.log(
+      `Extracted text length: ${extractedText.length}`
+    );
+
+    // --------------------------------
+    // STEP 3: Gemini AI
+    // --------------------------------
+
+    console.log("Starting Gemini analysis...");
+
+    const aiResult = await analyzeText(extractedText);
+
+    console.log("Gemini analysis completed.");
+    console.log("AI Result:", aiResult);
+
+    // --------------------------------
+    // STEP 4: Save result
+    // --------------------------------
 
     await prisma.screenshot.update({
       where: {
@@ -75,22 +103,29 @@ export async function POST(request, { params }) {
       },
       data: {
         extractedText,
+        category: aiResult.category,
         status: "processed",
       },
     });
 
+    // --------------------------------
+    // STEP 5: Return result
+    // --------------------------------
+
     return NextResponse.json({
       success: true,
-      message: "OCR completed successfully.",
+      message: "OCR and AI analysis completed successfully.",
       extractedText,
+      aiResult,
     });
   } catch (error) {
-    console.error("OCR error:", error);
+    console.error("OCR/AI error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "OCR processing failed.",
+        message: "OCR and AI processing failed.",
+        error: error.message,
       },
       { status: 500 }
     );
