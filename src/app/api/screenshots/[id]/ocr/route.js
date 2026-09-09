@@ -98,15 +98,46 @@ export async function POST(request, { params }) {
     // --------------------------------
 
     await prisma.screenshot.update({
-      where: {
-        id: memory.id,
-      },
-      data: {
-        extractedText,
-        category: aiResult.category,
-        status: "processed",
-      },
-    });
+  where: {
+    id: memory.id,
+  },
+  data: {
+    extractedText,
+    category: aiResult.category,
+    status: "processed",
+  },
+});
+
+await prisma.extractedInformation.upsert({
+  where: {
+    screenshotId: memory.id,
+  },
+
+  update: {
+    title: aiResult.title,
+    summary: aiResult.summary,
+    company: aiResult.company,
+    role: aiResult.role,
+    deadline: aiResult.deadline
+      ? new Date(aiResult.deadline)
+      : null,
+    location: aiResult.location,
+    skills: aiResult.skills || [],
+  },
+
+  create: {
+    screenshotId: memory.id,
+    title: aiResult.title,
+    summary: aiResult.summary,
+    company: aiResult.company,
+    role: aiResult.role,
+    deadline: aiResult.deadline
+      ? new Date(aiResult.deadline)
+      : null,
+    location: aiResult.location,
+    skills: aiResult.skills || [],
+  },
+});
 
     // --------------------------------
     // STEP 5: Return result
