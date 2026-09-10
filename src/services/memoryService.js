@@ -3,13 +3,16 @@ import { supabase } from "@/lib/supabase";
 
 export async function getUserMemories(userId) {
   const memories = await prisma.screenshot.findMany({
-    where: {
-      userId,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  where: {
+    userId,
+  },
+  include: {
+    extractedInformation: true,
+  },
+  orderBy: {
+    createdAt: "desc",
+  },
+});
 
   const memoriesWithUrls = await Promise.all(
     memories.map(async (memory) => {
