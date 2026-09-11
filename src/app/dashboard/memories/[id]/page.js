@@ -114,14 +114,12 @@ export default async function MemoryDetailsPage({ params }) {
                   label="Deadline"
                   value={
                     info?.deadline
-                      ? new Date(info.deadline).toLocaleDateString(
-                          "en-IN",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )
+                      ? new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+}).format(new Date(info.deadline))
                       : null
                   }
                 />
