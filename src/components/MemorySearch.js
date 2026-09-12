@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 function formatDate(date) {
@@ -57,7 +58,17 @@ export default function MemorySearch({ initialMemories }) {
 
       const data = await response.json();
 
-      setMemories(data.memories || []);
+console.log("SEARCH API MEMORIES:", data.memories);
+console.log("FIRST IMAGE URL:", data.memories?.[0]?.imageUrl);
+
+const searchResults = (data.memories || []).map((memory) => ({
+  ...memory,
+  imageUrl: String(memory.imageUrl || ""),
+}));
+
+console.log("SEARCH IMAGE URL:", searchResults[0]?.imageUrl);
+
+setMemories(searchResults);
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -131,17 +142,31 @@ export default function MemorySearch({ initialMemories }) {
               href={`/dashboard/memories/${memory.id}`}
               className="overflow-hidden rounded-xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
-              {memory.imageUrl ? (
-                <img
-                  src={memory.imageUrl}
-                  alt={memory.fileName}
-                  className="h-64 w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-64 w-full items-center justify-center bg-gray-100">
-                  Image unavailable
-                </div>
-              )}
+             {memory.imageUrl ? (
+  <div className="h-64 w-full bg-gray-100">
+    <img
+      key={memory.id}
+      src={memory.imageUrl}
+      alt={memory.fileName}
+      className="h-full w-full object-cover"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={(event) => {
+        console.error(
+          "IMAGE FAILED:",
+          memory.id,
+          memory.imageUrl
+        );
+        event.currentTarget.style.display = "none";
+      }}
+    />
+  </div>
+) : (
+  <div className="flex h-64 items-center justify-center bg-gray-100">
+    Image unavailable
+  </div>
+)}
+              
 
               <div className="p-5">
                 <p className="text-xs uppercase text-gray-500">
