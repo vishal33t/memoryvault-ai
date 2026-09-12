@@ -9,13 +9,14 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String?
-  email        String       @unique
+  email        String   @unique
   passwordHash String
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime @default(now())
 
-  screenshots  Screenshot[]
+  screenshots Screenshot[]
+  reminders   Reminder[]
 }
 
 model Screenshot {
@@ -31,12 +32,12 @@ model Screenshot {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   extractedInformation ExtractedInformation?
+  reminders            Reminder[]
 }
 
 model ExtractedInformation {
   id           String   @id @default(cuid())
-  screenshotId String   @unique
-
+  screenshotId  String   @unique
   title        String?
   summary      String?
   company      String?
@@ -46,4 +47,17 @@ model ExtractedInformation {
   skills       String[] @default([])
 
   screenshot Screenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
+}
+
+model Reminder {
+  id          String   @id @default(cuid())
+  userId      String
+  screenshotId String?
+  title       String
+  remindAt    DateTime
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  screenshot Screenshot? @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
 }
