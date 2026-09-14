@@ -1,6 +1,7 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-
+import CreateReminderButton from "@/components/CreateReminderButton";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -13,15 +14,20 @@ export default async function MemoryDetailsPage({ params }) {
 
   const { id } = await params;
 
-  const memory = await prisma.screenshot.findFirst({
-    where: {
-      id,
-      userId: session.user.id,
+ const memory = await prisma.screenshot.findFirst({
+  where: {
+    id,
+    userId: session.user.id,
+  },
+  include: {
+    extractedInformation: true,
+    reminders: {
+      orderBy: {
+        remindAt: "asc",
+      },
     },
-    include: {
-      extractedInformation: true,
-    },
-  });
+  },
+});
 
   if (!memory) {
     notFound();
@@ -152,7 +158,81 @@ export default async function MemoryDetailsPage({ params }) {
                 </div>
               </section>
             )}
+            {/* Reminders */}
+            <section className="mt-8 rounded-2xl border bg-white p-6 shadow-sm">
+  <div className="flex items-center justify-between">
+    <div>
+      <h2 className="text-xl font-semibold">
+        Reminders
+      </h2>
 
+      <p className="mt-1 text-sm text-gray-500">
+        Stay on top of this memory.
+      </p>
+    </div>
+  </div>
+
+  {memory.reminders?.length > 0 ? (
+    <div className="mt-5 space-y-3">
+      {memory.reminders.map((reminder) => (
+        <div
+          key={reminder.id}
+          className="flex items-center justify-between rounded-xl border bg-gray-50 p-4"
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium">
+                {reminder.title}
+              </p>
+
+              <span className="rounded-full bg-white px-2 py-1 text-xs">
+                {reminder.type === "automatic"
+                  ? "🤖 Automatic"
+                  : "👤 Manual"}
+              </span>
+            </div>
+
+            <p className="mt-1 text-sm text-gray-500">
+              ⏰{" "}
+              {new Date(
+                reminder.remindAt
+              ).toLocaleString("en-IN", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+          </div>
+
+          <span
+            className={`text-xs font-medium ${
+              reminder.completed
+                ? "text-gray-400"
+                : "text-green-600"
+            }`}
+          >
+            {reminder.completed
+              ? "Completed"
+              : "Upcoming"}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="mt-5">
+      <p className="mb-4 text-sm text-gray-500">
+        No reminder has been created for this memory.
+      </p>
+
+      <CreateReminderButton
+        screenshotId={memory.id}
+        defaultTitle={
+          memory.extractedInformation?.title ||
+          memory.fileName
+        }
+      />
+    </div>
+  )}
+</section>
             {/* OCR Text */}
             <section>
               <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">

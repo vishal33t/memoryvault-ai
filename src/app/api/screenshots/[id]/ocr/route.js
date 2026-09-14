@@ -139,6 +139,50 @@ await prisma.extractedInformation.upsert({
   },
 });
 
+// Create automatic reminder when AI detects a deadline
+if (aiResult.deadline) {
+  const deadline = new Date(aiResult.deadline);
+
+  if (!Number.isNaN(deadline.getTime())) {
+    // Remind the user one day before the deadline
+    const reminderDate = new Date(deadline);
+
+    reminderDate.setDate(
+      reminderDate.getDate() - 1
+    );
+
+    // Only create reminder if it is still in the future
+    if (reminderDate > new Date()) {
+      const existingReminder =
+        await prisma.reminder.findFirst({
+          where: {
+            userId: session.user.id,
+            screenshotId: memory.id,
+            type: "automatic",
+          },
+        });
+
+      if (!existingReminder) {
+        await prisma.reminder.create({
+          data: {
+            userId: session.user.id,
+            screenshotId: memory.id,
+            title: `Deadline: ${
+              aiResult.title || memory.fileName
+            }`,
+            remindAt: reminderDate,
+            type: "automatic",
+          },
+        });
+
+        console.log(
+          "Automatic reminder created successfully."
+        );
+      }
+    }
+  }
+}
+
     // --------------------------------
     // STEP 5: Return result
     // --------------------------------

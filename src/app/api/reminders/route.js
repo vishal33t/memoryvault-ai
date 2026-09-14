@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-
 // GET - Fetch user's reminders
+
 export async function GET() {
   try {
     const session = await auth();
@@ -48,7 +48,6 @@ export async function GET() {
 }
 
 
-// POST - Create a reminder
 export async function POST(request) {
   try {
     const session = await auth();
@@ -65,6 +64,11 @@ export async function POST(request) {
     const title = body.title?.trim();
     const remindAt = body.remindAt;
     const screenshotId = body.screenshotId || null;
+
+    const type =
+      body.type === "automatic"
+        ? "automatic"
+        : "manual";
 
     if (!title) {
       return NextResponse.json(
@@ -95,9 +99,8 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+   // If a screenshot is attached,
 
-    // If a screenshot is attached,
-    // make sure it belongs to the logged-in user.
     if (screenshotId) {
       const screenshot = await prisma.screenshot.findFirst({
         where: {
@@ -120,6 +123,7 @@ export async function POST(request) {
         screenshotId,
         title,
         remindAt: reminderDate,
+        type,
       },
     });
 

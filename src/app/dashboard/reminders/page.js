@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import ReminderList from "@/components/ReminderList";
+import ReminderList from "@/components/ReminderList.jsx";
 import Link from "next/link";
 
 export default async function RemindersPage() {
