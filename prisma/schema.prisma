@@ -4,63 +4,57 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String?
-  email        String   @unique
+  email        String       @unique
+  createdAt    DateTime     @default(now())
   passwordHash String
-  createdAt    DateTime @default(now())
-
-  screenshots Screenshot[]
-  reminders   Reminder[]
+  reminders    Reminder[]
+  screenshots  Screenshot[]
 }
 
 model Screenshot {
-  id            String   @id @default(cuid())
-  userId        String
-  imageUrl      String
-  fileName      String
-  extractedText String?
-  category      String?
-  status        String   @default("uploaded")
-  createdAt     DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id                   String                @id @default(cuid())
+  userId               String
+  imageUrl             String
+  createdAt            DateTime              @default(now())
+  category             String?
+  fileName             String
+  status               String                @default("uploaded")
+  extractedText        String?
   extractedInformation ExtractedInformation?
   reminders            Reminder[]
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ExtractedInformation {
-  id           String   @id @default(cuid())
-  screenshotId  String   @unique
+  id           String     @id @default(cuid())
+  screenshotId String     @unique
   title        String?
   summary      String?
   company      String?
   role         String?
   deadline     DateTime?
   location     String?
-  skills       String[] @default([])
-
-  screenshot Screenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
+  skills       String[]   @default([])
+  screenshot   Screenshot @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
 }
 
 model Reminder {
-   id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   userId       String
   screenshotId String?
   title        String
   remindAt     DateTime
-  completed    Boolean  @default(false)
-  type         String   @default("manual")
-  notified     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-
-  
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  screenshot Screenshot? @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
+  completed    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  type         String      @default("manual")
+  notified     Boolean     @default(false)
+  screenshot   Screenshot? @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
