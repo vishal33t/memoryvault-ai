@@ -50,14 +50,16 @@ model ExtractedInformation {
 }
 
 model Reminder {
-    id           String   @id @default(cuid())
+   id           String   @id @default(cuid())
   userId       String
   screenshotId String?
   title        String
   remindAt     DateTime
   completed    Boolean  @default(false)
   type         String   @default("manual")
+  notified     Boolean  @default(false)
   createdAt    DateTime @default(now())
+
   
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   screenshot Screenshot? @relation(fields: [screenshotId], references: [id], onDelete: Cascade)
