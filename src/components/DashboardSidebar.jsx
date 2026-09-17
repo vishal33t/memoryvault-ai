@@ -3,7 +3,7 @@ import { navigationItems } from "@/lib/navigation";
 
 export default function DashboardSidebar() {
   return (
-    <aside className="hidden min-h-screen w-64 border-r bg-white md:block">
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 overflow-y-auto border-r bg-white md:block">
       {/* Logo / Header */}
       <div className="border-b p-6">
         <h1 className="text-xl font-bold">
