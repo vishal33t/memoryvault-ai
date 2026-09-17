@@ -44,4 +44,9 @@ export const navigationItems = [
     href: "/dashboard/reminders",
     icon: "⏰",
   },
+  {
+  name: "Other",
+  href: "/dashboard/other",
+  icon: "📦",
+},
 ];
