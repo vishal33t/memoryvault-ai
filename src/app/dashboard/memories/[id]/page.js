@@ -4,6 +4,7 @@ import Link from "next/link";
 import CreateReminderButton from "@/components/CreateReminderButton";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import EditMemoryInfo from "@/components/EditMemoryInfo";
 
 export default async function MemoryDetailsPage({ params }) {
   const session = await auth();
@@ -158,6 +159,24 @@ export default async function MemoryDetailsPage({ params }) {
                 </div>
               </section>
             )}
+            {/* EDIT MEMORY INFO BUTTON COMPONENT ADDED HERE */}
+            <div className="mb-8">
+              <EditMemoryInfo 
+                screenshotId={memory.id} 
+                initialCategory={memory.category} 
+                initialInfo={ 
+                  info ? {
+                    title: info.title,
+                    summary: info.summary,
+                    company: info.company,
+                    role: info.role,
+                    location: info.location,
+                    deadline: info.deadline ? info.deadline.toISOString() : null,
+                    skills: info.skills || [],
+                  } : null 
+                } 
+              />
+            </div>
             {/* Reminders */}
             <section className="mt-8 rounded-2xl border bg-white p-6 shadow-sm">
   <div className="flex items-center justify-between">
