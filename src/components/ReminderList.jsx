@@ -360,8 +360,17 @@ function ReminderCard({
               <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium">
                 👤 Manual
               </span>
-            )}
-          </div>
+            )}</div>
+            {reminder.type === "automatic" ? (
+  <p className="mt-1 text-xs text-gray-500">
+    Automatically created from a detected deadline.
+  </p>
+) : (
+  <p className="mt-1 text-xs text-gray-500">
+    Created manually by you.
+  </p>
+)}
+          
 
 
           <p className="mt-2 text-sm text-gray-500">
