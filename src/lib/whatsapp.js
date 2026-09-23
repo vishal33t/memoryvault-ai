@@ -30,10 +30,7 @@ export async function sendReminderWhatsApp({
     timeStyle: "short",
   });
 
-  const message = await client.messages.create({
-    from: process.env.TWILIO_WHATSAPP_FROM,
-    to: `whatsapp:${to}`,
-    body: `🔔 MemoryVault AI Reminder
+  const body = `🔔 MemoryVault AI Reminder
 
 ${title}
 
@@ -43,8 +40,19 @@ ${
     : ""
 }Reminder time: ${formattedDate}
 
-Open MemoryVault AI to view your saved memory.`,
+Open MemoryVault AI to view your saved memory.`;
+
+  console.log("Sending WhatsApp message...");
+  console.log("From:", process.env.TWILIO_WHATSAPP_FROM);
+  console.log("To:", `whatsapp:${to}`);
+
+  const message = await client.messages.create({
+    from: process.env.TWILIO_WHATSAPP_FROM,
+    to: `whatsapp:${to}`,
+    body,
   });
+
+  console.log("WhatsApp message created:", message.sid);
 
   return message;
 }
