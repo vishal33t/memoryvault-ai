@@ -1,47 +1,47 @@
 import { NextResponse } from "next/server";
-import twilio from "twilio";
-
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+import { sendReminderWhatsApp } from "@/lib/whatsapp";
 
 export async function GET(request) {
-  const { searchParams } = request.nextUrl;
-  const toNumber = searchParams.get("to");
-  const deadlineDate = searchParams.get("date");
-  const deadlineTime = searchParams.get("time");
-
-  const targetNumber = toNumber || process.env.TEST_WHATSAPP_NUMBER;
-  // Let's use simpler test fallbacks that match sandbox numeric formats
-  const dateStr = deadlineDate || "12/10/2026";
-  const timeStr = deadlineTime || "10:00 AM";
-
-  if (!targetNumber) {
-    return NextResponse.json({ success: false, error: "Missing recipient 'to' parameter." }, { status: 400 });
-  }
-
   try {
-    const message = await client.messages.create({
-      from: process.env.TWILIO_WHATSAPP_FROM,
-      to: `whatsapp:${targetNumber}`,
-      // Strict fallback layout matching Twilio Sandbox exact validation string
-      body: "Your appointment is coming up on " + dateStr + " at " + timeStr,
+    const { searchParams } = new URL(request.url);
+
+    const to = searchParams.get("to") || process.env.TEST_WHATSAPP_NUMBER;
+    const date = searchParams.get("date") || "25 September 2026";
+    const time = searchParams.get("time") || "10:00 AM";
+
+    if (!to) {
+      return NextResponse.json(
+        { success: false, error: "WhatsApp recipient is required." },
+        { status: 400 }
+      );
+    }
+
+    // Combine date and time for parsing or log purposes
+    const remindAt = new Date(`${date} ${time}`);
+
+    console.log("Triggering Meta WhatsApp Test Route Execution...");
+
+    const messageResult = await sendReminderWhatsApp({
+      to,
+      title: "Appointment Reminder",
+      remindAt,
+      memoryTitle: "Upcoming Schedule",
     });
 
     return NextResponse.json({
       success: true,
-      messageSid: message.sid,
-      status: message.status,
+      messageSid: messageResult.sid,
+      status: messageResult.status,
+      to,
+      note: "Using Meta sandbox 'hello_world' template restriction.",
     });
-
   } catch (error) {
-    console.error("WhatsApp Execution Error:", error);
+    console.error("WhatsApp test route failed:", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error.message,
-        code: error.code || null,
       },
       { status: 500 }
     );

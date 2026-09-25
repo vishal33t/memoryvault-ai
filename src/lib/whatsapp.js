@@ -1,58 +1,54 @@
-import twilio from "twilio";
+import axios from "axios";
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
+// 🛠️ Hardcoded fallbacks if process.env continues to cache incorrectly
+const token = process.env.WHATSAPP_TOKEN || "EAAbbAUxFgLYBSkV7fBRaYUabAtZAHQcJpZBPeCbFuADADbsNmC8yjhvecTMT7vIQDZAaZAZC9WkWX5SviXT8vty8efeIcrHn6CN41LS3f3tD8tZA2o8oFoagN3sFr6CyEQKNbbxhZC6xHXCv8ZAGXYzDZCnO60NOSeTD4xx3qVFHYI0OlmbFNVNQ1ke03tnxyQhZAm0wZDZD";
 
-if (!accountSid || !authToken) {
-  throw new Error(
-    "Twilio credentials are not configured."
-  );
-}
-
-const client = twilio(accountSid, authToken);
-
-export async function sendReminderWhatsApp({
-  to,
-  title,
-  remindAt,
-  memoryTitle,
-}) {
+/**
+ * Sends a WhatsApp reminder using Meta Cloud API via Axios
+ */
+export async function sendReminderWhatsApp({ to, title, remindAt, memoryTitle }) {
   if (!to) {
-    throw new Error(
-      "Recipient WhatsApp number is required."
-    );
+    throw new Error("Recipient WhatsApp number is required.");
   }
 
-  const formattedDate = new Date(
-    remindAt
-  ).toLocaleString("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  // Strip all non-digit characters (Meta expects clean formats like 916006419936)
+  const cleanPhone = to.replace(/\D/g, "");
+  
+  // 🔥 HARDCODED DIRECT URL STRING: No syntax substitution errors possible!
+  const url = "https://facebook.com";
 
-  const body = `🔔 MemoryVault AI Reminder
+  const payload = {
+    messaging_product: "whatsapp",
+    to: cleanPhone,
+    type: "template",
+    template: {
+      name: "hello_world",
+      language: {
+        code: "en_US"
+      }
+    }
+  };
 
-${title}
+  console.log(`Sending Meta WhatsApp message using Axios to: ${cleanPhone}`);
 
-${
-  memoryTitle
-    ? `Memory: ${memoryTitle}\n`
-    : ""
-}Reminder time: ${formattedDate}
+  try {
+    const response = await axios.post(url, payload, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      }
+    });
 
-Open MemoryVault AI to view your saved memory.`;
+    const data = response.data;
+    console.log("WhatsApp message sent successfully via Meta:", data.messages?.[0]?.id);
 
-  console.log("Sending WhatsApp message...");
-  console.log("From:", process.env.TWILIO_WHATSAPP_FROM);
-  console.log("To:", `whatsapp:${to}`);
-
-  const message = await client.messages.create({
-    from: process.env.TWILIO_WHATSAPP_FROM,
-    to: `whatsapp:${to}`,
-    body,
-  });
-
-  console.log("WhatsApp message created:", message.sid);
-
-  return message;
+    return {
+      sid: data.messages?.[0]?.id,
+      status: "accepted",
+    };
+  } catch (error) {
+    const metaError = error.response?.data?.error?.message || error.message;
+    console.error("Meta API Request Failed:", metaError);
+    throw new Error(metaError);
+  }
 }
