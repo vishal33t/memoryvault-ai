@@ -54,7 +54,32 @@ export default function UploadPage() {
         return;
       }
 
-      setMessage("Screenshot uploaded successfully.");
+      const memoryId = data.screenshot?.id;
+
+      if (!memoryId) {
+        setMessage("Upload succeeded, but memory ID was missing.");
+        return;
+      }
+
+      setMessage("Extracting information using OCR & AI...");
+
+      const ocrResponse = await fetch(
+        `/api/screenshots/${memoryId}/ocr`,
+        {
+          method: "POST",
+        }
+      );
+
+      const ocrData = await ocrResponse.json();
+
+      if (!ocrResponse.ok || !ocrData.success) {
+        setMessage(
+          ocrData.message || "OCR/AI processing failed."
+        );
+        return;
+      }
+
+      setMessage("Screenshot uploaded and processed successfully!");
 
       setTimeout(() => {
         router.push("/dashboard");

@@ -5,6 +5,73 @@ import { supabase } from "@/lib/supabase";
 import { extractTextFromImage } from "@/services/ocrService";
 import { analyzeText } from "@/services/aiService";
 
+// --------------------------------
+// India timezone helpers
+// --------------------------------
+
+// Convert a YYYY-MM-DD date into a Date representing
+// 11:59:59 PM on that date in India.
+function createIndiaDeadlineDate(dateString) {
+  if (!dateString) {
+    return null;
+  }
+
+  const match = String(dateString).match(
+    /^(\d{4})-(\d{2})-(\d{2})$/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+
+  const date = new Date(
+    `${year}-${month}-${day}T23:59:59+05:30`
+  );
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
+
+// Create an automatic reminder for 9:00 AM IST
+// on the day before the deadline.
+function createIndiaReminderDate(dateString) {
+  if (!dateString) {
+    return null;
+  }
+
+  const match = String(dateString).match(
+    /^(\d{4})-(\d{2})-(\d{2})$/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+
+  // Start with 9:00 AM IST on the detected deadline date.
+  const deadlineMorning = new Date(
+    `${year}-${month}-${day}T09:00:00+05:30`
+  );
+
+  if (Number.isNaN(deadlineMorning.getTime())) {
+    return null;
+  }
+
+  // One calendar day before the deadline.
+  const reminderDate = new Date(deadlineMorning);
+  reminderDate.setUTCDate(
+    reminderDate.getUTCDate() - 1
+  );
+
+  return reminderDate;
+}
+
 export async function POST(request, { params }) {
   try {
     const session = await auth();
@@ -41,7 +108,9 @@ export async function POST(request, { params }) {
       },
     });
 
-    console.log(`Starting AI processing for memory: ${memory.id}`);
+    console.log(
+      `Starting AI processing for memory: ${memory.id}`
+    );
 
     // --------------------------------
     // STEP 1: Download image
@@ -94,112 +163,165 @@ export async function POST(request, { params }) {
     console.log("AI Result:", aiResult);
 
     // --------------------------------
-    // STEP 4: Save result
+    // STEP 4: Prepare deadline
+    // --------------------------------
+
+    const deadlineDate = aiResult.deadline
+      ? createIndiaDeadlineDate(aiResult.deadline)
+      : null;
+
+    const reminderDate = aiResult.deadline
+      ? createIndiaReminderDate(aiResult.deadline)
+      : null;
+
+    if (aiResult.deadline) {
+      console.log(
+        "AI detected deadline:",
+        aiResult.deadline
+      );
+
+      console.log(
+        "Deadline stored as:",
+        deadlineDate?.toISOString()
+      );
+
+      console.log(
+        "Automatic reminder scheduled for:",
+        reminderDate?.toISOString()
+      );
+    }
+
+    // --------------------------------
+    // STEP 5: Save screenshot result
     // --------------------------------
 
     await prisma.screenshot.update({
-  where: {
-    id: memory.id,
-  },
-  data: {
-    extractedText,
-    category: aiResult.category,
-    status: "processed",
-  },
-});
+      where: {
+        id: memory.id,
+      },
+      data: {
+        extractedText,
+        category: aiResult.category,
+        status: "processed",
+      },
+    });
 
-await prisma.extractedInformation.upsert({
-  where: {
-    screenshotId: memory.id,
-  },
+    // --------------------------------
+    // STEP 6: Save extracted information
+    // --------------------------------
 
-  update: {
-    title: aiResult.title,
-    summary: aiResult.summary,
-    company: aiResult.company,
-    role: aiResult.role,
-    deadline: aiResult.deadline
-      ? new Date(aiResult.deadline)
-      : null,
-    location: aiResult.location,
-    skills: aiResult.skills || [],
-  },
+    await prisma.extractedInformation.upsert({
+      where: {
+        screenshotId: memory.id,
+      },
 
-  create: {
-    screenshotId: memory.id,
-    title: aiResult.title,
-    summary: aiResult.summary,
-    company: aiResult.company,
-    role: aiResult.role,
-    deadline: aiResult.deadline
-      ? new Date(aiResult.deadline)
-      : null,
-    location: aiResult.location,
-    skills: aiResult.skills || [],
-  },
-});
+      update: {
+        title: aiResult.title,
+        summary: aiResult.summary,
+        company: aiResult.company,
+        role: aiResult.role,
+        deadline: deadlineDate,
+        location: aiResult.location,
+        skills: aiResult.skills || [],
+      },
 
-// Create automatic reminder when AI detects a deadline
-if (aiResult.deadline) {
-  const deadline = new Date(aiResult.deadline);
+      create: {
+        screenshotId: memory.id,
+        title: aiResult.title,
+        summary: aiResult.summary,
+        company: aiResult.company,
+        role: aiResult.role,
+        deadline: deadlineDate,
+        location: aiResult.location,
+        skills: aiResult.skills || [],
+      },
+    });
 
-  if (!Number.isNaN(deadline.getTime())) {
-    // Remind the user one day before the deadline
-    const reminderDate = new Date(deadline);
+    // --------------------------------
+    // STEP 7: Create automatic reminder
+    // --------------------------------
 
-    reminderDate.setDate(
-      reminderDate.getDate() - 1
-    );
+    if (reminderDate) {
+      // Only create the reminder if it is still in the future.
+      if (reminderDate > new Date()) {
+        const existingReminder =
+          await prisma.reminder.findFirst({
+            where: {
+              userId: session.user.id,
+              screenshotId: memory.id,
+              type: "automatic",
+            },
+          });
 
-    // Only create reminder if it is still in the future
-    if (reminderDate > new Date()) {
-      const existingReminder =
-        await prisma.reminder.findFirst({
-          where: {
-            userId: session.user.id,
-            screenshotId: memory.id,
-            type: "automatic",
-          },
-        });
+        if (!existingReminder) {
+          await prisma.reminder.create({
+            data: {
+              userId: session.user.id,
+              screenshotId: memory.id,
+              title: `Deadline: ${
+                aiResult.title || memory.fileName
+              }`,
+              remindAt: reminderDate,
+              type: "automatic",
+            },
+          });
 
-      if (!existingReminder) {
-        await prisma.reminder.create({
-          data: {
-            userId: session.user.id,
-            screenshotId: memory.id,
-            title: `Deadline: ${
-              aiResult.title || memory.fileName
-            }`,
-            remindAt: reminderDate,
-            type: "automatic",
-          },
-        });
+          console.log(
+            "Automatic reminder created successfully."
+          );
 
+          console.log(
+            `Reminder time (IST): ${
+              reminderDate.toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+                dateStyle: "medium",
+                timeStyle: "short",
+              })
+            }`
+          );
+        } else {
+          console.log(
+            "Automatic reminder already exists."
+          );
+        }
+      } else {
         console.log(
-          "Automatic reminder created successfully."
+          "Reminder date has already passed. No automatic reminder created."
         );
       }
     }
-  }
-}
 
     // --------------------------------
-    // STEP 5: Return result
+    // STEP 8: Return result
     // --------------------------------
 
     return NextResponse.json({
       success: true,
-      message: "OCR and AI analysis completed successfully.",
+      message:
+        "OCR and AI analysis completed successfully.",
       extractedText,
       aiResult,
     });
   } catch (error) {
     console.error("OCR/AI error:", error);
 
+    try {
+      const { id } = await params;
+      if (id) {
+        await prisma.screenshot.update({
+          where: { id },
+          data: { status: "failed" },
+        });
+      }
+    } catch (dbError) {
+      console.error("Failed to update screenshot status to failed:", dbError);
+    }
+
     return NextResponse.json(
       {
         success: false,
-        message: "OCR and AI processing failed.",
+        message:
+          "OCR and AI processing failed.",
         error: error.message,
       },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getUserMemories } from "@/services/memoryService";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
@@ -192,12 +193,12 @@ export default async function Dashboard() {
                   </p>
                 </div>
 
-                <a
+                <Link
                   href="/dashboard/memories"
                   className="text-sm font-medium hover:underline"
                 >
                   View all →
-                </a>
+                </Link>
 
               </div>
 
