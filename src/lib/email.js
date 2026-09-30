@@ -12,18 +12,19 @@ export async function sendReminderEmail({
     throw new Error("Recipient email is required.");
   }
 
-  const formattedDate = new Date(remindAt).toLocaleString(
-    "en-IN",
-    {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }
-  );
+  const formattedDate = new Date(
+    remindAt
+  ).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
   const result = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL,
     to,
     subject: `🔔 MemoryVault Reminder: ${title}`,
+
     html: `
       <div style="
         font-family: Arial, sans-serif;
@@ -32,6 +33,7 @@ export async function sendReminderEmail({
         padding: 24px;
         color: #111827;
       ">
+
         <h2>🔔 MemoryVault AI Reminder</h2>
 
         <p>
@@ -44,29 +46,38 @@ export async function sendReminderEmail({
           background: #f3f4f6;
           margin: 20px 0;
         ">
+
           <h3 style="margin-top: 0;">
             ${title}
           </h3>
 
           ${
             memoryTitle
-              ? `<p><strong>Memory:</strong> ${memoryTitle}</p>`
+              ? `<p>
+                  <strong>Memory:</strong>
+                  ${memoryTitle}
+                </p>`
               : ""
           }
 
           <p>
             <strong>Reminder time:</strong>
-            ${formattedDate}
+            ${formattedDate} IST
           </p>
+
         </div>
 
         <p>
           Open MemoryVault AI to view the related memory.
         </p>
 
-        <p style="color: #6b7280; font-size: 13px;">
+        <p style="
+          color: #6b7280;
+          font-size: 13px;
+        ">
           This is an automated notification from MemoryVault AI.
         </p>
+
       </div>
     `,
   });

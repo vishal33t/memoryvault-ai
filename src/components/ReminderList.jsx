@@ -14,6 +14,10 @@ export default function ReminderList({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  // --------------------------------
+  // Create manual reminder
+  // --------------------------------
+
   async function createReminder(event) {
     event.preventDefault();
 
@@ -32,17 +36,22 @@ export default function ReminderList({
     try {
       setLoading(true);
 
-      const response = await fetch("/api/reminders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          remindAt: new Date(remindAt).toISOString(),
-          type: "manual",
-        }),
-      });
+      const response = await fetch(
+        "/api/reminders",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            remindAt: new Date(
+              remindAt
+            ).toISOString(),
+            type: "manual",
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -74,6 +83,10 @@ export default function ReminderList({
       setLoading(false);
     }
   }
+
+  // --------------------------------
+  // Complete / uncomplete reminder
+  // --------------------------------
 
   async function toggleCompleted(reminder) {
     try {
@@ -116,6 +129,10 @@ export default function ReminderList({
     }
   }
 
+  // --------------------------------
+  // Delete reminder
+  // --------------------------------
+
   async function deleteReminder(id) {
     const confirmed = window.confirm(
       "Are you sure you want to delete this reminder?"
@@ -153,20 +170,37 @@ export default function ReminderList({
     }
   }
 
+  // --------------------------------
+  // Format date in India timezone
+  // --------------------------------
+
   function formatDate(date) {
     return new Date(date).toLocaleString(
       "en-IN",
       {
+        timeZone: "Asia/Kolkata",
         dateStyle: "medium",
         timeStyle: "short",
       }
     );
   }
 
+  // --------------------------------
+  // Reminder categories
+  // --------------------------------
+
+  const now = new Date();
+
   const upcoming = reminders.filter(
     (reminder) =>
       !reminder.completed &&
-      new Date(reminder.remindAt) >= new Date()
+      new Date(reminder.remindAt) >= now
+  );
+
+  const overdue = reminders.filter(
+    (reminder) =>
+      !reminder.completed &&
+      new Date(reminder.remindAt) < now
   );
 
   const completed = reminders.filter(
@@ -176,16 +210,20 @@ export default function ReminderList({
   return (
     <div>
 
-      {/* Manual Reminder */}
+      {/* --------------------------------
+          Manual Reminder
+      -------------------------------- */}
+
       <div className="mb-8 rounded-2xl border bg-white p-6 shadow-sm">
+
         <div>
           <h2 className="text-xl font-semibold">
             Create Manual Reminder
           </h2>
 
           <p className="mt-1 text-sm text-gray-500">
-            Create a reminder for anything that does
-            not have an automatic deadline.
+            Create a reminder for anything that
+            does not have an automatic deadline.
           </p>
         </div>
 
@@ -193,6 +231,7 @@ export default function ReminderList({
           onSubmit={createReminder}
           className="mt-6 grid gap-4 md:grid-cols-[1fr_auto_auto]"
         >
+
           <input
             type="text"
             value={title}
@@ -221,6 +260,7 @@ export default function ReminderList({
               ? "Creating..."
               : "Create Reminder"}
           </button>
+
         </form>
 
         {message && (
@@ -228,11 +268,15 @@ export default function ReminderList({
             {message}
           </p>
         )}
+
       </div>
 
+      {/* --------------------------------
+          Upcoming
+      -------------------------------- */}
 
-      {/* Upcoming */}
       <section>
+
         <div className="mb-4">
           <h2 className="text-xl font-semibold">
             Upcoming Reminders
@@ -245,6 +289,7 @@ export default function ReminderList({
 
         {upcoming.length === 0 ? (
           <div className="rounded-2xl border bg-white p-10 text-center">
+
             <div className="text-4xl">
               ⏰
             </div>
@@ -256,9 +301,11 @@ export default function ReminderList({
             <p className="mt-2 text-sm text-gray-500">
               Your reminders will appear here.
             </p>
+
           </div>
         ) : (
           <div className="grid gap-4">
+
             {upcoming.map((reminder) => (
               <ReminderCard
                 key={reminder.id}
@@ -268,19 +315,60 @@ export default function ReminderList({
                 formatDate={formatDate}
               />
             ))}
+
           </div>
         )}
+
       </section>
 
+      {/* --------------------------------
+          Overdue
+      -------------------------------- */}
 
-      {/* Completed */}
+      {overdue.length > 0 && (
+        <section className="mt-10">
+
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">
+              Overdue
+            </h2>
+
+            <p className="text-sm text-gray-500">
+              These reminders have passed but are
+              not completed yet.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+
+            {overdue.map((reminder) => (
+              <ReminderCard
+                key={reminder.id}
+                reminder={reminder}
+                onToggle={toggleCompleted}
+                onDelete={deleteReminder}
+                formatDate={formatDate}
+              />
+            ))}
+
+          </div>
+
+        </section>
+      )}
+
+      {/* --------------------------------
+          Completed
+      -------------------------------- */}
+
       {completed.length > 0 && (
         <section className="mt-10">
+
           <h2 className="mb-4 text-xl font-semibold">
             Completed
           </h2>
 
           <div className="grid gap-4">
+
             {completed.map((reminder) => (
               <ReminderCard
                 key={reminder.id}
@@ -290,7 +378,9 @@ export default function ReminderList({
                 formatDate={formatDate}
               />
             ))}
+
           </div>
+
         </section>
       )}
 
@@ -298,6 +388,10 @@ export default function ReminderList({
   );
 }
 
+
+// ================================================
+// Reminder Card
+// ================================================
 
 function ReminderCard({
   reminder,
@@ -311,17 +405,25 @@ function ReminderCard({
   const automatic =
     reminder.type === "automatic";
 
+  const overdue =
+    !reminder.completed &&
+    new Date(reminder.remindAt) < new Date();
+
   return (
     <div
       className={`rounded-2xl border bg-white p-5 shadow-sm ${
         reminder.completed
           ? "opacity-60"
+          : overdue
+          ? "border-gray-400"
           : ""
       }`}
     >
+
       <div className="flex items-start gap-4">
 
         {/* Checkbox */}
+
         <button
           onClick={() =>
             onToggle(reminder)
@@ -339,9 +441,13 @@ function ReminderCard({
 
 
         {/* Content */}
+
         <div className="min-w-0 flex-1">
 
+          {/* Title + Type */}
+
           <div className="flex flex-wrap items-center gap-2">
+
             <h3
               className={`font-semibold ${
                 reminder.completed
@@ -360,23 +466,39 @@ function ReminderCard({
               <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium">
                 👤 Manual
               </span>
-            )}</div>
-            {reminder.type === "automatic" ? (
-  <p className="mt-1 text-xs text-gray-500">
-    Automatically created from a detected deadline.
-  </p>
-) : (
-  <p className="mt-1 text-xs text-gray-500">
-    Created manually by you.
-  </p>
-)}
-          
+            )}
 
+            {overdue && (
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium">
+                ⚠ Overdue
+              </span>
+            )}
+
+          </div>
+
+
+          {/* Description */}
+
+          {automatic ? (
+            <p className="mt-1 text-xs text-gray-500">
+              Automatically created from a
+              detected deadline.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-500">
+              Created manually by you.
+            </p>
+          )}
+
+
+          {/* Reminder time */}
 
           <p className="mt-2 text-sm text-gray-500">
-            ⏰ {formatDate(reminder.remindAt)}
+            ⏰ {formatDate(reminder.remindAt)} IST
           </p>
 
+
+          {/* Related memory */}
 
           {info?.title && (
             <p className="mt-2 text-xs text-gray-400">
@@ -385,10 +507,31 @@ function ReminderCard({
           )}
 
 
+          {/* Notification status */}
+
+          {!reminder.completed && (
+            <div className="mt-4 flex flex-wrap gap-3">
+
+              <NotificationStatus
+                label="Email"
+                sent={reminder.emailSent}
+              />
+
+              <NotificationStatus
+                label="WhatsApp"
+                sent={reminder.whatsappSent}
+              />
+
+            </div>
+          )}
+
+
+          {/* View memory */}
+
           {memory?.id && (
             <Link
               href={`/dashboard/memories/${memory.id}`}
-              className="mt-3 inline-block text-sm font-medium hover:underline"
+              className="mt-4 inline-block text-sm font-medium hover:underline"
             >
               View memory →
             </Link>
@@ -398,6 +541,7 @@ function ReminderCard({
 
 
         {/* Delete */}
+
         <button
           onClick={() =>
             onDelete(reminder.id)
@@ -408,6 +552,32 @@ function ReminderCard({
         </button>
 
       </div>
+
     </div>
+  );
+}
+
+
+// ================================================
+// Notification Status
+// ================================================
+
+function NotificationStatus({
+  label,
+  sent,
+}) {
+  return (
+    <span className="rounded-lg border bg-gray-50 px-3 py-2 text-xs">
+      {label}{" "}
+      {sent ? (
+        <span className="font-medium">
+          ✓ Sent
+        </span>
+      ) : (
+        <span className="text-gray-500">
+          ○ Pending
+        </span>
+      )}
+    </span>
   );
 }
