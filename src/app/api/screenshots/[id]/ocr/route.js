@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { supabase } from "@/lib/supabase";
 import { extractTextFromImage } from "@/services/ocrService";
 import { analyzeText } from "@/services/aiService";
+import { generateEmbedding } from "@/services/embeddingService";
+import { saveEmbedding } from "@/services/embeddingDatabaseService";
 
 // --------------------------------
 // India timezone helpers
@@ -236,6 +238,43 @@ export async function POST(request, { params }) {
         skills: aiResult.skills || [],
       },
     });
+    
+    // Generate semantic-search embedding
+try {
+  const searchableText = [
+    aiResult.title,
+    aiResult.summary,
+    aiResult.company,
+    aiResult.role,
+    aiResult.location,
+    ...(aiResult.skills || []),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  if (searchableText.trim()) {
+    console.log(
+      "Generating semantic-search embedding..."
+    );
+
+    const embedding =
+      await generateEmbedding(searchableText);
+
+    await saveEmbedding(
+      memory.id,
+      embedding
+    );
+
+    console.log(
+      "Semantic-search embedding saved successfully."
+    );
+  }
+} catch (embeddingError) {
+  console.error(
+    "Embedding generation failed. Continuing without embedding:",
+    embeddingError.message
+  );
+}
 
     // --------------------------------
     // STEP 7: Create automatic reminder
